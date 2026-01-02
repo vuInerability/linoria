@@ -1015,7 +1015,6 @@ do
             ChangedCallback = Info.ChangedCallback or function(New) end;
 
             SyncToggleState = Info.SyncToggleState or false;
-            ParentToggle = ParentObj.Type == 'Toggle' and ParentObj or nil;
         };
 
         if KeyPicker.SyncToggleState then
@@ -1147,12 +1146,6 @@ do
 
         function KeyPicker:Update()
             if Info.NoUI then
-                return;
-            end;
-
-            -- Only show keybind if parent toggle is enabled (if it has one)
-            if KeyPicker.ParentToggle and not KeyPicker.ParentToggle.Value then
-                ContainerLabel.Visible = false;
                 return;
             end;
 
@@ -1922,38 +1915,12 @@ do
                 if Addon.Type == 'KeyPicker' and Addon.SyncToggleState then
                     Addon.Toggled = Bool
                     Addon:Update()
-                elseif Addon.Type == 'KeyPicker' then
-                    -- Update keybind visibility when toggle state changes
-                    Addon:Update()
                 end
             end
 
             Library:SafeCallback(Toggle.Callback, Toggle.Value);
             Library:SafeCallback(Toggle.Changed, Toggle.Value);
             Library:UpdateDependencyBoxes();
-        end;
-
-        function Toggle:SetValueSilent(Bool)
-            -- Set value without triggering callbacks (for config loading)
-            Bool = (not not Bool);
-
-            Toggle.Value = Bool;
-            Toggle:Display();
-
-            for _, Addon in next, Toggle.Addons do
-                if Addon.Type == 'KeyPicker' and Addon.SyncToggleState then
-                    Addon.Toggled = Bool
-                    Addon:Update()
-                elseif Addon.Type == 'KeyPicker' then
-                    -- Update keybind visibility when toggle state changes
-                    Addon:Update()
-                end
-            end
-
-            -- Don't call callbacks or update dependency boxes
-            -- Library:SafeCallback(Toggle.Callback, Toggle.Value);
-            -- Library:SafeCallback(Toggle.Changed, Toggle.Value);
-            -- Library:UpdateDependencyBoxes();
         end;
 
         ToggleRegion.InputBegan:Connect(function(Input)
@@ -3663,33 +3630,6 @@ end;
 
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
-
--- Function to patch SaveManager to use SetValueSilent for Toggles
-function Library:PatchSaveManager()
-    if self.SaveManager and self.SaveManager.Parser and self.SaveManager.Parser.Toggle then
-        local originalToggleLoad = self.SaveManager.Parser.Toggle.Load
-        if originalToggleLoad then
-            self.SaveManager.Parser.Toggle.Load = function(idx, data)
-                if Toggles[idx] and Toggles[idx].SetValueSilent then
-                    Toggles[idx]:SetValueSilent(data.value)
-                elseif Toggles[idx] then
-                    -- Fallback to original if SetValueSilent doesn't exist
-                    originalToggleLoad(idx, data)
-                end
-            end
-        end
-    end
-end
-
--- Auto-patch SaveManager periodically (in case it's loaded later)
-task.spawn(function()
-    while true do
-        task.wait(1)
-        if Library.SaveManager then
-            Library:PatchSaveManager()
-        end
-    end
-end)
 
 getgenv().Library = Library
 return Library
