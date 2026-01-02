@@ -10,13 +10,7 @@ local SaveManager = {} do
 			end,
 			Load = function(idx, data)
 				if Toggles[idx] then 
-					-- Use SetValueSilent to avoid triggering callbacks when loading configs
-					if Toggles[idx].SetValueSilent then
-						Toggles[idx]:SetValueSilent(data.value)
-					else
-						-- Fallback to SetValue if SetValueSilent doesn't exist
-						Toggles[idx]:SetValue(data.value)
-					end
+					Toggles[idx]:SetValue(data.value)
 				end
 			end,
 		},
